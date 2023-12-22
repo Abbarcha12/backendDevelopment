@@ -1,9 +1,9 @@
 import express from "express"
 import dotenv from "dotenv"
+import cors from "cors"
 dotenv.config()
 const app = express()
-
-
+app.cors()
 app.listen(process.env.PORT,()=>{
     console.log(`Server is Running in ${process.env.PORT}`)
 })
