@@ -19,7 +19,6 @@ const UploadFile = async (LocalFilePath) => {
 
     // Unlink the local file after successful upload
     fs.unlinkSync(LocalFilePath);
-    console.log("Upload successful:", response);
     return response;
   } catch (error) {
     // Log the error, but do not rethrow it if the error occurred during unlink

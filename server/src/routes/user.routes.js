@@ -13,11 +13,11 @@ import {
   getUserWatchHistory,
 } from "../controllers/user.controllers.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
-import { upload } from "../middlewares/multer.middleware.js";
+import { FilesUpload } from "../middlewares/multer.middleware.js";
 const router = Router();
 
 router.route("/register").post(
-  upload.fields([
+  FilesUpload.fields([
     { name: "avatar", maxCount: 1 },
     { name: "coverImage", maxCount: 1 },
   ]),
@@ -35,10 +35,10 @@ router.route("/current-user").get(verifyJWT, currentUser);
 router.route("/update-user").patch(verifyJWT, updateUser);
 router
   .route("/avatar")
-  .patch(verifyJWT, upload.single("avatar"), updateUserAvater);
+  .patch(verifyJWT, FilesUpload.single("avatar"), updateUserAvater);
 router
   .route("/cover-image")
-  .patch(verifyJWT, upload.single("coverImage"), updateCoverImage);
+  .patch(verifyJWT, FilesUpload.single("coverImage"), updateCoverImage);
 
 router.route("/c/:username").get(verifyJWT, getUserChannel);
 router.route("/history").get(verifyJWT, getUserWatchHistory);
