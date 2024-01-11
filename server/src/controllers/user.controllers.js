@@ -260,7 +260,7 @@ export const updateUserAvater = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Avatar file is missing");
   }
 
-  const avatar = await fileUpload(avatarLocal);
+  const avatar = await UploadFile(avatarLocal);
 
   if (!avatar.url) {
     throw new ApiError(400, "Error while Uploading Error ");
@@ -287,7 +287,7 @@ export const updateCoverImage = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Cover Image is missing");
   }
 
-  const coverImage = await fileUpload(coverImageLocalPath);
+  const coverImage = await UploadFile(coverImageLocalPath);
 
   if (!coverImage.url) {
     throw new ApiError(400, "Error while Uploading Error ");

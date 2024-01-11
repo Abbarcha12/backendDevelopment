@@ -31,4 +31,4 @@ import videosRouter from "./routes/video.router.js";
 // Routes Declaration
 
 app.use("/api/v1/users", userRouter);
-app.use("/api/v1/videos", videosRouter);
+app.use("/api/v1/video", videosRouter);
