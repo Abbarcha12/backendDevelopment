@@ -3,6 +3,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { UploadFile } from "../utils/fileUpload.js";
 import Video from "../models/video.models.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import mongoose from "mongoose";
 
 export const upLoadingVideo = asyncHandler(async (req, res) => {
   const { title, description, duration } = req.body;
@@ -99,6 +100,7 @@ export const SingleVideos = asyncHandler(async (req, res) => {
 
 export const updateVideos = asyncHandler(async (req, res) => {
   const { id } = req.params;
+  console.log(id, "ID");
   if (!id) {
     throw new ApiError(400, "Video Id is Required ");
   }
@@ -121,7 +123,9 @@ export const updateVideos = asyncHandler(async (req, res) => {
         new: true, //return the updated user instead of original one
       }
     );
-
+    if (!video) {
+      throw (new ApiError(404), "Video Not Update");
+    }
     return res
       .status(200)
       .json(new ApiResponse(200, video, "Video Updated successfully"));
@@ -221,12 +225,58 @@ export const deleteVideo = asyncHandler(async (req, res) => {
   try {
     const video = await Video.findByIdAndDelete(id);
     if (!video) {
-        throw new ApiError(404,"Video not found")
+      throw new ApiError(404, "Video not found");
     }
 
-    return res.status(200,{},"Video deleted successfully")
-    
+    return res.status(200, {}, "Video deleted successfully");
   } catch (error) {
     throw new ApiError(500, "Internal Server Error");
+  }
+});
+
+export const gettingVideoOwner = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  if (!id) {
+    throw new ApiError(400, "No Video ID Provided!");
+  }
+  try {
+    const videoOwner = await Video.aggregate([
+      { $match: { _id: new mongoose.Types.ObjectId(id) } },
+      {
+        $lookup: {
+          from: "User",
+          localField: "owner",
+          foreignField: "_id",
+          as: "Video_Owner",
+        },
+      },
+      { $unwind: "$owner" },
+      {
+        $project: {
+          _id: 1,
+          title: 1, // Add other fields you want to retrieve from the Video collection
+          owner: {
+            _id: "$owner._id",
+            username: "$owner.username",
+            fullName: "$owner.fullName",
+            // Add other fields you want to retrieve from the User collection
+          },
+        },
+      },
+    ]);
+    if (!videoOwner) {
+      throw new ApiError(404, "Video not found");
+    }
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          videoOwner[0],
+          "Video with owner fetched successfully"
+        )
+      );
+  } catch (error) {
+    throw new ApiError(500, "Internal Server Error ");
   }
 });

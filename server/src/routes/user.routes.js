@@ -7,7 +7,7 @@ import {
   userLogout,
   updateUser,
   userRegister,
-  updateUserAvater,
+  updateUserAvatar,
   updateCoverImage,
   getUserChannel,
   getUserWatchHistory,
@@ -29,13 +29,13 @@ router.route("/login").post(userLogin);
 // secured routes
 
 router.route("/logout").post(verifyJWT, userLogout);
-router.route("/refresh-token").post(refreshAccessToken);
+router.route("/refreshToken").post(refreshAccessToken);
 router.route("/change-password").post(verifyJWT, changeCurrentPassword);
 router.route("/current-user").get(verifyJWT, currentUser);
 router.route("/update-user").patch(verifyJWT, updateUser);
 router
   .route("/avatar")
-  .patch(verifyJWT, FilesUpload.single("avatar"), updateUserAvater);
+  .patch(verifyJWT, FilesUpload.single("avatar"), updateUserAvatar);
 router
   .route("/cover-image")
   .patch(verifyJWT, FilesUpload.single("coverImage"), updateCoverImage);

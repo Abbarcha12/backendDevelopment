@@ -177,7 +177,7 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
       throw new ApiError(401, "Invalid Refresh Token  ");
     }
 
-    if (incomingRefreshToken !== refreshToken) {
+    if (incomingRefreshToken !== user?.refreshToken) {
       throw new ApiError(401, "Refresh Token is Expired or used !  ");
     }
 
@@ -221,11 +221,11 @@ export const changeCurrentPassword = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, {}, "Password Change SuccessFylly"));
+    .json(new ApiResponse(200, {}, "Password Change SuccessFully"));
 });
 
 export const currentUser = asyncHandler(async (req, res) => {
-  return res.json(200, req.user, "current user Data ");
+  return res.json(new ApiResponse(200, req.user, "current user Data "));
 });
 
 export const updateUser = asyncHandler(async (req, res) => {
@@ -250,10 +250,10 @@ export const updateUser = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, {}, "User Updated successfully"));
+    .json(new ApiResponse(200, user, "User Updated successfully"));
 });
 
-export const updateUserAvater = asyncHandler(async (req, res) => {
+export const updateUserAvatar = asyncHandler(async (req, res) => {
   const avatarLocal = req.file?.path;
 
   if (!avatarLocal) {
@@ -266,7 +266,7 @@ export const updateUserAvater = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Error while Uploading Error ");
   }
 
-  const user = await findByIdAndUpdate(
+  const user = await User.findByIdAndUpdate(
     req.user?._id,
     {
       $set: {
@@ -293,7 +293,7 @@ export const updateCoverImage = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Error while Uploading Error ");
   }
 
-  const user = await findByIdAndUpdate(
+  const user = await User.findByIdAndUpdate(
     req.user?._id,
     {
       $set: {
@@ -310,61 +310,72 @@ export const updateCoverImage = asyncHandler(async (req, res) => {
 export const getUserChannel = asyncHandler((req, res) => {
   const { username } = req.params;
 
-  if (!username) {
-    throw new ApiError(400, "Username is Missing");
-  }
+  if (!username?.trim()) {
+    throw new ApiError(400, "username is missing")
+}
 
-  const channel = User.aggregate([
-    {
-      $match: {
-        username: username?.toLowerCase(),
+//   try {
+    const channel = User.aggregate([
+      {
+        $match: {
+          username: username?.toLowerCase(),
+        },
       },
-    },
-    {
-      $lookup: {
-        from: "subscriptions",
-        localField: "_id",
-        foreignField: "channel",
-        as: "subscribers",
+      {
+        $lookup: {
+          from: "subscriptions",
+          localField: "_id",
+          foreignField: "channel",
+          as: "subscribers",
+        },
       },
-    },
-    {
-      $lookup: {
-        from: "subscriptions",
-        localField: "_id",
-        foreignField: "subscribe",
-        as: "subscribedTo",
+      {
+        $lookup: {
+          from: "subscriptions",
+          localField: "_id",
+          foreignField: "subscribe",
+          as: "subscribedTo",
+        },
       },
-    },
 
-    {
-      $addFields: {
-        subscribesCount: {
-          $size: "$subscribers",
-        },
-        channelSubscribeToCount: {
-          $size: "$subscribedTo",
-        },
-        isSubscribed: {
-          $if: { $in: [req.user?._id, "$subscribers.subscribe"] },
-          then: true,
-          else: false,
+      {
+        $addFields: {
+          subscribesCount: {
+            $size: "$subscribers",
+          },
+          channelSubscribeToCount: {
+            $size: "$subscribedTo",
+          },
+          isSubscribed: {
+            $if: { $in: [req.user?._id, "$subscribers.subscribe"] },
+            then: true,
+            else: false,
+          },
         },
       },
-    },
-    {
-      $project: {
-        fullName: 1,
-        username: 1,
-        subscribesCount: 1,
-        channelSubscribeToCount: 1,
-        isSubscribed: 1,
-        avatar: 1,
-        coverImage: 1,
-        email: 1,
+      {
+        $project: {
+          fullName: 1,
+          username: 1,
+          subscribesCount: 1,
+          channelSubscribeToCount: 1,
+          isSubscribed: 1,
+          avatar: 1,
+          coverImage: 1,
+          email: 1,
+        },
       },
-    },
-  ]);
+    ]);
+    if (!channel?.length) {
+        throw new ApiError(404, "channel does not exists")
+    }
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, channel[0], "channel data fetch successfully"));
+//   } catch (error) {
+//     throw new ApiError(500, "Internal Server Error ");
+//   }
 });
 
 export const getUserWatchHistory = asyncHandler(async (req, res) => {

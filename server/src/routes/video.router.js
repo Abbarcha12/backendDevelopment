@@ -3,6 +3,7 @@ import {
   AllVideos,
   SingleVideos,
   deleteVideo,
+  gettingVideoOwner,
   upLoadingVideo,
   updateThumbnail,
   updateVideoFile,
@@ -21,14 +22,16 @@ router.route("/videosUpload").post(
   ]),
   upLoadingVideo
 );
-
+router.route("/videoOwner/:id").get(gettingVideoOwner);
 router.route("/videos").get(AllVideos);
 router.route("/videos/:id").get(SingleVideos);
 router.route("/updateVideo/:id").patch(updateVideos);
-router.route("/updateVideoFile/:id").patch(FilesUpload.single('videoFile'),updateVideoFile);
-router.route("/updateThumbnail/:id").patch(FilesUpload.single('thumbnail'),updateThumbnail);
+router
+  .route("/updateVideoFile/:id")
+  .patch(FilesUpload.single("videoFile"), updateVideoFile);
+router
+  .route("/updateThumbnail/:id")
+  .patch(FilesUpload.single("thumbnail"), updateThumbnail);
 router.route("/deleteVideo/:id").delete(deleteVideo);
-
-
 
 export default router;
