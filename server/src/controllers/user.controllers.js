@@ -1,6 +1,7 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import User from "../models/user.models.js";
+import mongoose from "mongoose";
 // {Uses Register }
 import { UploadFile } from "../utils/fileUpload.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -138,8 +139,8 @@ export const userLogout = asyncHandler(async (req, res) => {
   await User.findByIdAndUpdate(
     req.user._id,
     {
-      $set: {
-        refreshToken: undefined,
+      $unset: {
+        refreshToken: 1,
       },
     },
     {
@@ -307,75 +308,75 @@ export const updateCoverImage = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "coverImage  Updated successfully"));
 });
 
-export const getUserChannel = asyncHandler((req, res) => {
+export const getUserChannel = asyncHandler(async (req, res) => {
   const { username } = req.params;
 
   if (!username?.trim()) {
-    throw new ApiError(400, "username is missing")
-}
+    throw new ApiError(400, "username is missing");
+  }
 
-//   try {
-    const channel = User.aggregate([
-      {
-        $match: {
-          username: username?.toLowerCase(),
-        },
+  const channel = await User.aggregate([
+    {
+      $match: {
+        username: username?.toLowerCase(),
       },
-      {
-        $lookup: {
-          from: "subscriptions",
-          localField: "_id",
-          foreignField: "channel",
-          as: "subscribers",
-        },
-      },
-      {
-        $lookup: {
-          from: "subscriptions",
-          localField: "_id",
-          foreignField: "subscribe",
-          as: "subscribedTo",
-        },
-      },
+    },
 
-      {
-        $addFields: {
-          subscribesCount: {
-            $size: "$subscribers",
-          },
-          channelSubscribeToCount: {
-            $size: "$subscribedTo",
-          },
-          isSubscribed: {
-            $if: { $in: [req.user?._id, "$subscribers.subscribe"] },
-            then: true,
-            else: false,
-          },
-        },
+    {
+      $lookup: {
+        from: "subscriptions",
+        localField: "_id",
+        foreignField: "channel",
+        as: "subscribers",
       },
-      {
-        $project: {
-          fullName: 1,
-          username: 1,
-          subscribesCount: 1,
-          channelSubscribeToCount: 1,
-          isSubscribed: 1,
-          avatar: 1,
-          coverImage: 1,
-          email: 1,
-        },
+    },
+    {
+      $lookup: {
+        from: "subscriptions",
+        localField: "_id",
+        foreignField: "subscribe",
+        as: "subscribedTo",
       },
-    ]);
-    if (!channel?.length) {
-        throw new ApiError(404, "channel does not exists")
-    }
+    },
 
-    return res
-      .status(200)
-      .json(new ApiResponse(200, channel[0], "channel data fetch successfully"));
-//   } catch (error) {
-//     throw new ApiError(500, "Internal Server Error ");
-//   }
+    {
+      $addFields: {
+        subscribesCount: {
+          $size: "$subscribers",
+        },
+        channelSubscribeToCount: {
+          $size: "$subscribedTo",
+        },
+        isSubscribed: {
+            $cond: {
+                if: {$in: [req.user?._id, "$subscribers.subscriber"]},
+                then: true,
+                else: false
+            }
+        },
+      },
+    },
+    {
+      $project: {
+        fullName: 1,
+        username: 1,
+        subscribesCount: 1,
+        channelSubscribeToCount: 1,
+        isSubscribed: 1,
+        avatar: 1,
+        coverImage: 1,
+        email: 1,
+      },
+    },
+  ]);
+
+  if (!channel?.length) {
+    throw new ApiError(404, "channel does not exists");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, channel[0], "channel data fetch successfully"));
 });
 
 export const getUserWatchHistory = asyncHandler(async (req, res) => {
@@ -386,14 +387,14 @@ export const getUserWatchHistory = asyncHandler(async (req, res) => {
 
     {
       $lookup: {
-        form: "Video",
+        from: "videos",
         localField: "watchHistory",
         foreignField: "_id",
         as: "watchHistory",
         pipeline: [
           {
             $lookup: {
-              form: "User",
+              from: "users",
               localField: "videoOwner",
               foreignField: "_id",
               as: "videoOwner",
