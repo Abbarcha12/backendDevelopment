@@ -61,16 +61,48 @@ export const upLoadingVideo = asyncHandler(async (req, res) => {
   }
 });
 
-export const AllVideos = asyncHandler(async (req, res) => {
-  const Videos = await Video.find({});
+// Filter and sorting of Videos
+const Filter = (query, userId) => {
+  const filter = {};
 
-  if (!Videos || Videos.length === 0) {
-    throw new ApiError(404, "No Videos Found");
+  if (query) {
+    filter.title = { $regex: new RegExp(query), $options: "i" };
   }
+
+  if (userId) {
+    filter.userId = userId;
+  }
+
+  return filter;
+};
+
+const Sort = (sortBy, sortType) => {
+  const sort = {};
+
+  if (sortBy) {
+    sort[sortBy] = sortType === "desc" ? -1 : 1;
+  }
+
+  return sort;
+};
+
+export const AllVideos = asyncHandler(async (req, res) => {
   try {
+    const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
+    const filter = Filter(query, userId);
+    const sort = Sort(sortBy, sortType);
+    const videos = await Video.find(filter)
+      .sort(sort)
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
+
+    if (!videos || videos.length === 0) {
+      throw new ApiError(404, "No Videos Found");
+    }
+
     return res
       .status(200)
-      .json(new ApiResponse(200, Videos, "Videos fetch successfully"));
+      .json(new ApiResponse(200, videos, "Videos fetch successfully"));
   } catch (error) {
     throw new ApiError(500, "Internal Server Error");
   }
@@ -100,7 +132,7 @@ export const SingleVideos = asyncHandler(async (req, res) => {
 
 export const updateVideos = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  console.log(id, "ID");
+
   if (!id) {
     throw new ApiError(400, "Video Id is Required ");
   }
@@ -276,6 +308,27 @@ export const gettingVideoOwner = asyncHandler(async (req, res) => {
           "Video with owner fetched successfully"
         )
       );
+  } catch (error) {
+    throw new ApiError(500, "Internal Server Error ");
+  }
+});
+
+export const togglePublishStatus = asyncHandler(async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const video = await Video.findById(id);
+
+    if (!video) {
+      throw new ApiError(404, "Video Not Found");
+    }
+
+    video.isPublished = !video.isPublished;
+    await video.save();
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, video, "Video is Published successfully"));
   } catch (error) {
     throw new ApiError(500, "Internal Server Error ");
   }

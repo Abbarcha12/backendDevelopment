@@ -4,6 +4,7 @@ import {
   SingleVideos,
   deleteVideo,
   gettingVideoOwner,
+  togglePublishStatus,
   upLoadingVideo,
   updateThumbnail,
   updateVideoFile,
@@ -33,5 +34,6 @@ router
   .route("/updateThumbnail/:id")
   .patch(FilesUpload.single("thumbnail"), updateThumbnail);
 router.route("/deleteVideo/:id").delete(deleteVideo);
+router.route("/videoPublished/:id").get(togglePublishStatus);
 
 export default router;
