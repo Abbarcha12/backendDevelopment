@@ -348,11 +348,11 @@ export const getUserChannel = asyncHandler(async (req, res) => {
           $size: "$subscribedTo",
         },
         isSubscribed: {
-            $cond: {
-                if: {$in: [req.user?._id, "$subscribers.subscriber"]},
-                then: true,
-                else: false
-            }
+          $cond: {
+            if: { $in: [req.user?._id, "$subscribers.subscriber"] },
+            then: true,
+            else: false,
+          },
         },
       },
     },
@@ -382,9 +382,10 @@ export const getUserChannel = asyncHandler(async (req, res) => {
 export const getUserWatchHistory = asyncHandler(async (req, res) => {
   const user = await User.aggregate([
     {
-      $match: { _id: new mongoose.Types.ObjectId(req.user._id) },
+      $match: {
+        _id: new mongoose.Types.ObjectId(req.user._id),
+      },
     },
-
     {
       $lookup: {
         from: "videos",
@@ -395,9 +396,9 @@ export const getUserWatchHistory = asyncHandler(async (req, res) => {
           {
             $lookup: {
               from: "users",
-              localField: "videoOwner",
+              localField: "owner",
               foreignField: "_id",
-              as: "videoOwner",
+              as: "owner",
               pipeline: [
                 {
                   $project: {
@@ -409,6 +410,7 @@ export const getUserWatchHistory = asyncHandler(async (req, res) => {
               ],
             },
           },
+
           {
             $addFields: {
               owner: {
@@ -420,6 +422,7 @@ export const getUserWatchHistory = asyncHandler(async (req, res) => {
       },
     },
   ]);
+
   return res
     .status(200)
     .json(

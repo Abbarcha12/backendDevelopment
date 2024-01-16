@@ -4,8 +4,10 @@ import { UploadFile } from "../utils/fileUpload.js";
 import Video from "../models/video.models.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import mongoose from "mongoose";
+import { Filter, Sort } from "../utils/pagenigation.js";
 
 export const upLoadingVideo = asyncHandler(async (req, res) => {
+  //   try {
   const { title, description, duration } = req.body;
 
   if ([title, description, duration].some((field) => field.trim() === "")) {
@@ -15,6 +17,7 @@ export const upLoadingVideo = asyncHandler(async (req, res) => {
   if (isNaN(numericDuration)) {
     throw new ApiError(400, "Invalid duration format");
   }
+
   const videoFileLocalpath = req.files?.videoFile[0]?.path;
 
   if (!videoFileLocalpath) {
@@ -26,65 +29,38 @@ export const upLoadingVideo = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Thumbnail file is required");
   }
 
-  try {
-    const videoFile = await UploadFile(videoFileLocalpath);
-    const thumbnail = await UploadFile(thumbnailLocalPath);
+  const videoFile = await UploadFile(videoFileLocalpath);
+  const thumbnail = await UploadFile(thumbnailLocalPath);
 
-    if (!videoFile) {
-      throw new ApiError(400, "Video file upload failed");
-    }
-
-    if (!thumbnail) {
-      throw new ApiError(400, "thumbnail file upload failed");
-    }
-
-    const video = await Video.create({
-      title: title.toLowerCase(),
-      description: description.toLowerCase(),
-      duration: numericDuration,
-      videoFile: videoFile.url,
-      thumbnail: thumbnail.url,
-    });
-
-    if (!video) {
-      throw new ApiError(
-        500,
-        "Something went wrong while uploading the video!"
-      );
-    }
-
-    res
-      .status(201)
-      .json(new ApiResponse(200, video, "Video uploaded successfully"));
-  } catch (error) {
-    throw new ApiError(500, "Internal Server Error");
+  if (!videoFile) {
+    throw new ApiError(400, "Video file upload failed");
   }
+
+  if (!thumbnail) {
+    throw new ApiError(400, "thumbnail file upload failed");
+  }
+
+  const video = await Video.create({
+    title: title.toLowerCase(),
+    description: description.toLowerCase(),
+    duration: numericDuration,
+    videoFile: videoFile.url,
+    thumbnail: thumbnail.url,
+  });
+
+  if (!video) {
+    throw new ApiError(500, "Something went wrong while uploading the video!");
+  }
+
+  res
+    .status(201)
+    .json(new ApiResponse(200, video, "Video uploaded successfully"));
+  //   } catch (error) {
+  //     throw new ApiError(500, "Internal Server Error");
+  //   }
 });
 
 // Filter and sorting of Videos
-const Filter = (query, userId) => {
-  const filter = {};
-
-  if (query) {
-    filter.title = { $regex: new RegExp(query), $options: "i" };
-  }
-
-  if (userId) {
-    filter.userId = userId;
-  }
-
-  return filter;
-};
-
-const Sort = (sortBy, sortType) => {
-  const sort = {};
-
-  if (sortBy) {
-    sort[sortBy] = sortType === "desc" ? -1 : 1;
-  }
-
-  return sort;
-};
 
 export const AllVideos = asyncHandler(async (req, res) => {
   try {
@@ -267,27 +243,28 @@ export const deleteVideo = asyncHandler(async (req, res) => {
 });
 
 export const gettingVideoOwner = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  if (!id) {
-    throw new ApiError(400, "No Video ID Provided!");
-  }
   try {
+    const { id } = req.params;
+    if (!id) {
+      throw new ApiError(400, "No Video ID Provided!");
+    }
+
     const videoOwner = await Video.aggregate([
       { $match: { _id: new mongoose.Types.ObjectId(id) } },
       {
         $lookup: {
-          from: "User",
-          localField: "owner",
+          from: "users",
+          localField: "videoOwner",
           foreignField: "_id",
-          as: "Video_Owner",
+          as: "videoOwners",
         },
       },
-      { $unwind: "$owner" },
+      { $unwind: "$videoOwners" },
       {
         $project: {
           _id: 1,
           title: 1, // Add other fields you want to retrieve from the Video collection
-          owner: {
+          videoOwners: {
             _id: "$owner._id",
             username: "$owner.username",
             fullName: "$owner.fullName",
@@ -304,7 +281,7 @@ export const gettingVideoOwner = asyncHandler(async (req, res) => {
       .json(
         new ApiResponse(
           200,
-          videoOwner[0],
+          videoOwner,
           "Video with owner fetched successfully"
         )
       );
