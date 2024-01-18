@@ -7,7 +7,7 @@ import mongoose from "mongoose";
 import { Filter, Sort } from "../utils/pagenigation.js";
 
 export const upLoadingVideo = asyncHandler(async (req, res) => {
-  //   try {
+    // try {
   const { title, description, duration } = req.body;
 
   if ([title, description, duration].some((field) => field.trim() === "")) {
@@ -43,6 +43,7 @@ export const upLoadingVideo = asyncHandler(async (req, res) => {
   const video = await Video.create({
     title: title.toLowerCase(),
     description: description.toLowerCase(),
+    videoOwner: new mongoose.Types.ObjectId(req.user?._id),
     duration: numericDuration,
     videoFile: videoFile.url,
     thumbnail: thumbnail.url,
@@ -55,9 +56,9 @@ export const upLoadingVideo = asyncHandler(async (req, res) => {
   res
     .status(201)
     .json(new ApiResponse(200, video, "Video uploaded successfully"));
-  //   } catch (error) {
-  //     throw new ApiError(500, "Internal Server Error");
-  //   }
+    // } catch (error) {
+    //   throw new ApiError(500, "Internal Server Error");
+    // }
 });
 
 // Filter and sorting of Videos

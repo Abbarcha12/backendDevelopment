@@ -32,7 +32,7 @@ export const userRegister = asyncHandler(async (req, res) => {
 
   const avatarLocalPath = await req.files?.avatar[0]?.path;
 
-  // const coverImageLocalPath = await req.files?.coverImage[0]?.path
+//   const coverImageLocalPath = await req.files?.coverImage[0]?.path
   let coverImageLocalPath;
   if (
     req.files &&
@@ -53,7 +53,7 @@ export const userRegister = asyncHandler(async (req, res) => {
   }
 
   const user = await User.create({
-    username: username.toLowerCase(),
+    username,
     fullName,
     email,
     password,
