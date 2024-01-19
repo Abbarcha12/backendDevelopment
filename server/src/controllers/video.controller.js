@@ -182,6 +182,7 @@ export const updateVideoFile = asyncHandler(async (req, res) => {
     throw new ApiError(500, "Internal Server Error");
   }
 });
+
 export const updateThumbnail = asyncHandler(async (req, res) => {
   const { id } = req.params;
   if (!id) {
